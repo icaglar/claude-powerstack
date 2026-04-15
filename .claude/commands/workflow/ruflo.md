@@ -15,7 +15,11 @@ ruflo memory search -q "$(git branch --show-current)"
 ```
 Bulunan pattern'ları ve geçmiş kararları not al. Aynı hatayı tekrar yapma.
 
-### 0b. Oturum Geri Yükle (varsa)
+### 0b. Oturum Geri Yükle (yalnızca yarım kalan görevlerde)
+Sadece şu durumda çalıştır:
+- Önceki oturumda bu feature için swarm başlatılmıştı ve yarım kaldı
+- Yeni görev başlatıyorsan bu adımı **atla**
+
 ```bash
 ruflo hooks session-restore
 ```

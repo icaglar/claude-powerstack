@@ -66,7 +66,7 @@ Her phase'de hangi aracın ne yaptığını aşağıda görebilirsin.
 | Adım | Araç | Komut / Aksiyon |
 |------|------|-----------------|
 | Geçmiş hafızayı yükle | **Ruflo** | `ruflo memory search --query "<görev anahtar kelimeleri>"` |
-| Önceki oturumu geri yükle | **Ruflo** | `ruflo hooks session-restore` |
+| Önceki oturumu geri yükle _(sadece yarım kalan görevlerde)_ | **Ruflo** | `ruflo hooks session-restore` |
 | Git branch oluştur | Git | `git checkout -b feature/<kısa-açıklama>` |
 
 ---
