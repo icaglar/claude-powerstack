@@ -74,23 +74,80 @@ Phase 5: Doğrulama → Commit → PR
 | Orta (birkaç dosya, 2-8 saat) | `0a → 0c → 1a → 2a → 2b → 3a → 3b → 4a-c → 5a-c` |
 | Büyük (yeni feature, >8 saat) | Tam 5 phase |
 
-## Sık Kullanılan Ruflo Komutları
+## Ruflo Komut Referansı
+
+> Kısa alias: `ruflo` (yoksa `npx @claude-flow/cli@latest`)
+
+### Proje Başlatma
 
 ```bash
-# Routing — hangi agent, hangi model?
-npx @claude-flow/cli@latest hooks route -t "görev"
-npx @claude-flow/cli@latest hooks model-route -t "görev"
+ruflo init --wizard                   # interaktif proje kurulumu
+ruflo doctor --fix                    # sistem sağlığı + otomatik düzeltme
+```
 
-# Hafıza
-npx @claude-flow/cli@latest memory search --query "keywords"
-npx @claude-flow/cli@latest memory store --key "key" --value "value"
+### Agent Yönetimi
 
-# Swarm
-npx @claude-flow/cli@latest swarm init --topology hierarchical --max-agents 6
-npx @claude-flow/cli@latest swarm status
+```bash
+ruflo agent spawn -t coder            # coder agent başlat
+ruflo agent spawn -t tester           # tester agent (TDD için önce spawn et)
+ruflo agent spawn -t reviewer         # code review agent
+ruflo agent spawn -t architect        # mimari kararlar için
+ruflo agent spawn -t researcher       # codebase araştırma
+ruflo agent list                      # çalışan agent'ları listele
+ruflo agent metrics                   # performans metrikleri
+ruflo agent health                    # agent sağlık durumu
+```
 
-# Sistem sağlığı
-npx @claude-flow/cli@latest doctor
+### Swarm Orkestrasyon
+
+```bash
+ruflo swarm init --topology hierarchical --max-agents 6 --strategy specialized
+ruflo swarm start -o "feature hedefi" -s development
+ruflo swarm status                    # genel durum, agent sayısı
+ruflo swarm shutdown                  # swarm'ı durdur
+```
+
+### Task Yönetimi
+
+```bash
+ruflo task create -t testing -d "failing testleri yaz: <modül>"
+ruflo task create -t implementation -d "backend: <servis yaz>"
+ruflo task assign <task-id> --agent coder
+ruflo task list --all                 # tüm task'lar ve durumları
+ruflo task status <id>                # belirli task detayı
+ruflo task retry <id>                 # başarısız task'ı yeniden dene
+```
+
+### Routing — Hangi Agent / Model?
+
+```bash
+ruflo hooks route       -t "görev açıklaması"   # hangi agent tipi?
+ruflo hooks model-route -t "görev açıklaması"   # haiku / sonnet / opus?
+```
+
+### Hooks — Task Kayıt
+
+```bash
+ruflo hooks pre-task  -d "görev" -t implementation   # görev başlamadan kaydet
+ruflo hooks post-task -d "görev" --outcome success   # görev bitince kaydet
+ruflo hooks session-restore                          # önceki oturumu geri yükle
+```
+
+### Hafıza
+
+```bash
+ruflo memory search --query "keywords"                       # geçmiş ara
+ruflo memory store  --key "key" --value "value" --namespace patterns
+ruflo memory list   --namespace patterns --limit 10
+ruflo memory retrieve --key "key" --namespace patterns
+```
+
+### Oturum Yönetimi
+
+```bash
+ruflo session save    --name "oturum-adı"   # oturumu kaydet
+ruflo session list                          # kayıtlı oturumlar
+ruflo session restore --name "oturum-adı"  # oturumu geri yükle
 ```
 
 ## Superpowers Skill'leri
