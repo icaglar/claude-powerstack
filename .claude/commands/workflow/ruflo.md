@@ -67,6 +67,20 @@ ruflo hooks pre-task -d "<görev açıklaması>" -t implementation
 
 ---
 
+## ⏸️ ONAY NOKTASI 1 — Plan Onayı (ZORUNLU)
+
+> **DUR — implementasyona geçmeden önce kullanıcıdan onay al.**
+
+Kullanıcıya şunu sun:
+1. Plan dosyasının yolunu: `docs/superpowers/plans/YYYY-MM-DD-<feature>.md`
+2. Kısa özet: kaç dosya değişecek, hangi riskler var, tahmini kapsam
+3. Açık soru: **"Plan uygun mu, Phase 3'e geçilsin mi?"**
+
+Kullanıcı **"evet / devam / go"** demeden Phase 3'e GEÇİLMEZ.
+Kullanıcı değişiklik isterse planı güncelle ve tekrar onay iste.
+
+---
+
 ## PHASE 3 — Uygulama (TDD Sırasıyla)
 
 ### 3a. Swarm Kur ve Başlat
@@ -175,6 +189,17 @@ Superpowers `/finishing-a-development-branch` uygula:
 - `git push -u origin <branch>`
 
 ### 5c. PR Oluştur
+
+> **⏸️ ONAY NOKTASI 2 — PR Onayı (ZORUNLU)**
+>
+> PR açmadan önce kullanıcıya şunu göster:
+> - Branch adı ve commit listesi (`git log --oneline main..HEAD`)
+> - Test sonuçları (pass/fail özeti)
+> - Breaking change var mı?
+> - Taslak PR başlığı ve body'si
+>
+> Kullanıcı **"evet / push / pr aç"** demeden `gh pr create` ÇALIŞTIRILMAZ.
+
 ```bash
 gh pr create --title "<feat|fix>: kısa açıklama" --body "..."
 ```
@@ -207,17 +232,17 @@ ruflo memory store \
 
 ### Küçük görev (tek dosya, <2 saat):
 ```
-0c → 1a → 2b → 3b (sadece coder) → 4b → 5a → 5b → 5e
+0c → 1a → 2b → ⏸️ONAY1 → 3b (sadece coder) → 4b → 5a → 5b → ⏸️ONAY2 → 5c → 5e
 ```
 
 ### Orta görev (birkaç dosya, 2-8 saat):
 ```
-0a → 0c → 1a → 2a → 2b → 3a → 3b → 4a-c → 5a → 5b → 5c → 5e
+0a → 0c → 1a → 2a → 2b → ⏸️ONAY1 → 3a → 3b → 4a-c → 5a → 5b → ⏸️ONAY2 → 5c → 5e
 ```
 
 ### Büyük görev (yeni feature, >8 saat):
 ```
-0a → 0b → 0c → 1a → 1b → 2a → 2b → 3a → 3b → 4a-c → 5a → 5b → 5c → 5d → 5e
+0a → 0b → 0c → 1a → 1b → 2a → 2b → ⏸️ONAY1 → 3a → 3b → 4a-c → 5a → 5b → ⏸️ONAY2 → 5c → 5d → 5e
 ```
 
 ---
