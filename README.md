@@ -55,24 +55,90 @@ Claude Code'u aç ve bir görev ver:
 /workflow:ruflo kullanıcı kimlik doğrulama sistemi
 ```
 
-Workflow şu aşamaları otomatik çalıştırır:
+---
 
-```
-Phase 0: Hafıza yükle → Git branch oluştur
-Phase 1: Agent + model routing (Ruflo)
-Phase 2: Brainstorm → Plan yaz (Superpowers)
-Phase 3: Swarm kur → Agent'ları paralel dispatch et
-Phase 4: Code review döngüsü
-Phase 5: Doğrulama → Commit → PR
-```
+## Workflow — Ruflo ve Superpowers Birlikte Nasıl Çalışır?
+
+Her phase'de hangi aracın ne yaptığını aşağıda görebilirsin.
+
+### Phase 0 — Bağlam Kur
+
+| Adım | Araç | Komut / Aksiyon |
+|------|------|-----------------|
+| Geçmiş hafızayı yükle | **Ruflo** | `ruflo memory search --query "<görev anahtar kelimeleri>"` |
+| Önceki oturumu geri yükle | **Ruflo** | `ruflo hooks session-restore` |
+| Git branch oluştur | Git | `git checkout -b feature/<kısa-açıklama>` |
+
+---
+
+### Phase 1 — Keşif ve Yönlendirme
+
+| Adım | Araç | Komut / Aksiyon |
+|------|------|-----------------|
+| Hangi agent tipi kullanılmalı? | **Ruflo** | `ruflo hooks route -t "<görev açıklaması>"` |
+| Hangi model kullanılmalı? (haiku/sonnet/opus) | **Ruflo** | `ruflo hooks model-route -t "<görev açıklaması>"` |
+| Görev karmaşıksa brainstorming yap | **Superpowers** | `/brainstorming` → `docs/superpowers/specs/YYYY-MM-DD-<feature>.md` |
+
+---
+
+### Phase 2 — Planlama ⏸️ ONAY GEREKLİ
+
+| Adım | Araç | Komut / Aksiyon |
+|------|------|-----------------|
+| Uygulama planı yaz | **Superpowers** | `/writing-plans` → `docs/superpowers/plans/YYYY-MM-DD-<feature>.md` |
+| Görevi kaydet | **Ruflo** | `ruflo hooks pre-task -d "<görev>" -t implementation` |
+| **ONAY NOKTASI 1** | — | Planı kullanıcıya sun, "evet / devam / go" bekle |
+
+---
+
+### Phase 3 — Uygulama (TDD Sırasıyla)
+
+| Adım | Araç | Komut / Aksiyon |
+|------|------|-----------------|
+| Swarm oluştur | **Ruflo** | `ruflo swarm init --topology hierarchical --max-agents 6 --strategy specialized` |
+| Swarm başlat | **Ruflo** | `ruflo swarm start -o "<hedef>" -s development` |
+| Tester agent başlat (ÖNCE) | **Ruflo** | `ruflo agent spawn -t tester` |
+| Coder agent başlat | **Ruflo** | `ruflo agent spawn -t coder` |
+| Architect agent başlat (büyük görevlerde) | **Ruflo** | `ruflo agent spawn -t architect` |
+| Test task oluştur | **Ruflo** | `ruflo task create -t testing -d "failing testleri yaz: <modül>"` |
+| Implementation task oluştur | **Ruflo** | `ruflo task create -t implementation -d "backend: <servis yaz>"` |
+| Task'ları agent'lara ata | **Ruflo** | `ruflo task assign <id> --agent coder` |
+| Agent'ları paralel çalıştır | **Superpowers** | `/dispatching-parallel-agents` |
+| İlerlemeyi takip et | **Ruflo** | `ruflo swarm status` · `ruflo task list --all` |
+| Hata ayıklama | **Superpowers** | `/systematic-debugging` |
+
+---
+
+### Phase 4 — Code Review
+
+| Adım | Araç | Komut / Aksiyon |
+|------|------|-----------------|
+| Review başlat | **Superpowers** | `/requesting-code-review` |
+| Reviewer agent başlat | **Ruflo** | `ruflo agent spawn -t reviewer` |
+| Review bulgularını uygula | **Superpowers** | `/receiving-code-review` |
+
+---
+
+### Phase 5 — Tamamlama ⏸️ ONAY GEREKLİ
+
+| Adım | Araç | Komut / Aksiyon |
+|------|------|-----------------|
+| Testler + build + lint doğrula | **Superpowers** | `/verification-before-completion` |
+| Branch'i düzenle + commit | **Superpowers** | `/finishing-a-development-branch` |
+| **ONAY NOKTASI 2** | — | Commit listesi + test sonuçlarını kullanıcıya sun, "evet / push / pr aç" bekle |
+| PR oluştur | Git | `gh pr create --title "feat: ..." --body "..."` |
+| Görevi kaydet | **Ruflo** | `ruflo hooks post-task -d "<görev>" --outcome success` |
+| Öğrendiklerini hafızaya yaz | **Ruflo** | `ruflo memory store --key "<pattern>" --value "<karar>" --namespace patterns` |
+
+---
 
 ## Workflow Boyutuna Göre Hızlı Başlangıç
 
 | Görev | Adımlar |
 |-------|---------|
-| Küçük (tek dosya, <2 saat) | `0c → 1a → 2b → 3b → 4b → 5a → 5b` |
-| Orta (birkaç dosya, 2-8 saat) | `0a → 0c → 1a → 2a → 2b → 3a → 3b → 4a-c → 5a-c` |
-| Büyük (yeni feature, >8 saat) | Tam 5 phase |
+| Küçük (tek dosya, <2 saat) | `0c → 1a → 2b → ⏸️ONAY1 → 3b → 4b → 5a → 5b → ⏸️ONAY2 → 5c` |
+| Orta (birkaç dosya, 2-8 saat) | `0a → 0c → 1a → 2a → 2b → ⏸️ONAY1 → 3a → 3b → 4a-c → 5a → 5b → ⏸️ONAY2 → 5c → 5e` |
+| Büyük (yeni feature, >8 saat) | Tam 5 phase (tüm adımlar) |
 
 ## Ruflo Komut Referansı
 
