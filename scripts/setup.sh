@@ -36,20 +36,33 @@ else
 fi
 
 # 3. Workflow command kopyala
-echo -e "${YELLOW}[3/4]${NC} /workflow:ruflo komutu kuruluyor..."
+echo -e "${YELLOW}[3/5]${NC} /workflow:ruflo komutu kuruluyor..."
 CLAUDE_DIR="${HOME}/.claude"
 COMMANDS_DIR="${CLAUDE_DIR}/commands/workflow"
 mkdir -p "${COMMANDS_DIR}"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cp "${SCRIPT_DIR}/../.claude/commands/workflow/ruflo.md" "${COMMANDS_DIR}/ruflo.md"
+REPO_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+cp "${REPO_DIR}/.claude/commands/workflow/ruflo.md" "${COMMANDS_DIR}/ruflo.md"
 echo -e "${GREEN}✓${NC} /workflow:ruflo komutu ${COMMANDS_DIR}/ruflo.md konumuna kopyalandı"
 
-# 4. Ruflo MCP bağlantısı
-echo -e "${YELLOW}[4/4]${NC} Ruflo MCP sunucusu kaydediliyor..."
+# 4. Superpowers skill'lerini kopyala
+echo -e "${YELLOW}[4/5]${NC} Superpowers skill'leri kuruluyor..."
+if [ -d "${REPO_DIR}/superpowers/skills" ]; then
+    SKILLS_DEST="${CLAUDE_DIR}/plugins/superpowers/skills"
+    mkdir -p "${SKILLS_DEST}"
+    cp -r "${REPO_DIR}/superpowers/skills/." "${SKILLS_DEST}/"
+    SP_VERSION=$(cat "${REPO_DIR}/superpowers/VERSION" 2>/dev/null || echo "bundled")
+    echo -e "${GREEN}✓${NC} Superpowers skill'leri kopyalandı (v${SP_VERSION}) → ${SKILLS_DEST}"
+else
+    echo "  ⚠️  Superpowers skill dizini bulunamadı, atlanıyor"
+fi
+
+# 5. Ruflo MCP bağlantısı
+echo -e "${YELLOW}[5/5]${NC} Ruflo MCP sunucusu kaydediliyor..."
 claude mcp add claude-flow -- npx -y @claude-flow/cli@latest 2>/dev/null && \
     echo -e "${GREEN}✓${NC} MCP sunucu kaydedildi" || \
-    echo "  (Zaten kayıtlı veya manuel kurulum gerekiyor)"
+    echo "  (Zaten kayıtlı veya manuel kurulum: claude mcp add claude-flow -- npx -y @claude-flow/cli@latest)"
 
 echo ""
 echo -e "${GREEN}╔════════════════════════════════════════╗${NC}"

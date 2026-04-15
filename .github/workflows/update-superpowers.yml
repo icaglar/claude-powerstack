@@ -1,0 +1,140 @@
+name: Update Superpowers Skills
+
+on:
+  schedule:
+    # Her Pazartesi 09:00 UTC — yeni Superpowers versiyonu var mı kontrol et
+    - cron: '0 9 * * 1'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Superpowers version (örn: 5.0.8) — boş bırakırsan latest'
+        required: false
+        default: ''
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Superpowers son versiyonu bul
+        id: version
+        run: |
+          if [ -n "${{ github.event.inputs.version }}" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            # npm registry'den son versiyonu al
+            VERSION=$(npm show superpowers version 2>/dev/null || echo "")
+            if [ -z "$VERSION" ]; then
+              echo "Superpowers npm'de bulunamadı — registry'e göre kontrol edilecek"
+              # Mevcut versiyon bilgisini oku
+              VERSION=$(cat superpowers/VERSION 2>/dev/null || echo "5.0.7")
+            fi
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Hedef versiyon: $VERSION"
+
+      - name: Mevcut versiyonu kontrol et
+        id: check
+        run: |
+          CURRENT=$(cat superpowers/VERSION 2>/dev/null || echo "0.0.0")
+          TARGET="${{ steps.version.outputs.version }}"
+          echo "current=$CURRENT" >> $GITHUB_OUTPUT
+          if [ "$CURRENT" = "$TARGET" ]; then
+            echo "changed=false" >> $GITHUB_OUTPUT
+            echo "Zaten güncel: $CURRENT"
+          else
+            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "Güncelleme gerekli: $CURRENT → $TARGET"
+          fi
+
+      - name: Superpowers indir ve skill'leri güncelle
+        if: steps.check.outputs.changed == 'true'
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+
+          # npm pack ile indir
+          npm pack superpowers@$VERSION --pack-destination /tmp 2>/dev/null || {
+            echo "npm pack başarısız — manuel güncelleme gerekebilir"
+            exit 0
+          }
+
+          TARBALL=$(ls /tmp/superpowers-*.tgz 2>/dev/null | head -1)
+          if [ -z "$TARBALL" ]; then
+            echo "Tarball bulunamadı, atlanıyor"
+            exit 0
+          fi
+
+          # Çıkar
+          mkdir -p /tmp/superpowers-extract
+          tar -xzf $TARBALL -C /tmp/superpowers-extract --strip-components=1
+
+          # Skills ve commands güncelle
+          if [ -d "/tmp/superpowers-extract/skills" ]; then
+            rm -rf superpowers/skills
+            cp -r /tmp/superpowers-extract/skills superpowers/skills
+            echo "Skills güncellendi"
+          fi
+
+          if [ -d "/tmp/superpowers-extract/commands" ]; then
+            rm -rf superpowers/commands
+            cp -r /tmp/superpowers-extract/commands superpowers/commands
+            echo "Commands güncellendi"
+          fi
+
+          if [ -f "/tmp/superpowers-extract/RELEASE-NOTES.md" ]; then
+            cp /tmp/superpowers-extract/RELEASE-NOTES.md superpowers/RELEASE-NOTES.md
+          fi
+
+          # Versiyonu yaz
+          echo "$VERSION" > superpowers/VERSION
+
+      - name: Ruflo son versiyonu kontrol et
+        if: steps.check.outputs.changed == 'true'
+        id: ruflo
+        run: |
+          RUFLO_LATEST=$(npm show @claude-flow/cli version 2>/dev/null || echo "")
+          echo "version=$RUFLO_LATEST" >> $GITHUB_OUTPUT
+          if [ -n "$RUFLO_LATEST" ]; then
+            echo "Ruflo son versiyon: $RUFLO_LATEST"
+            # setup.sh'daki versiyon badge'ini güncelle
+            sed -i "s/@claude-flow\/cli@[0-9.]*/\@claude-flow\/cli@$RUFLO_LATEST/g" README.md 2>/dev/null || true
+          fi
+
+      - name: PR oluştur
+        if: steps.check.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "chore: Superpowers ${{ steps.version.outputs.version }} skill güncellemesi"
+          title: "chore: Superpowers ${{ steps.version.outputs.version }} → ${{ steps.check.outputs.current }}"
+          body: |
+            ## Otomatik Güncelleme
+
+            Superpowers skill'leri yeni versiyona güncellendi.
+
+            | | Versiyon |
+            |--|--------|
+            | **Önceki** | `${{ steps.check.outputs.current }}` |
+            | **Yeni** | `${{ steps.version.outputs.version }}` |
+
+            ### Değişiklikler
+            Tam değişiklik listesi için: [RELEASE-NOTES.md](superpowers/RELEASE-NOTES.md)
+
+            ### Kontrol Listesi
+            - [ ] Yeni skill'leri `/workflow:ruflo` komutuna eklenmesi gerekiyor mu?
+            - [ ] `scripts/setup.sh` güncellenmesi gerekiyor mu?
+            - [ ] README'de yeni özellikler belgelenmeli mi?
+          branch: "chore/superpowers-update-${{ steps.version.outputs.version }}"
+          delete-branch: true
+          labels: "dependencies,automated"
