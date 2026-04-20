@@ -29,7 +29,7 @@ bash scripts/setup.sh
 ```
 
 Setup scripti şunları yapar:
-1. Ruflo CLI'yı hazır hale getirir (`npx @claude-flow/cli@latest`)
+1. Ruflo CLI'yı hazır hale getirir (`npx @claude-flow/cli@3.5.80latest`)
 2. Superpowers plugin'ini kurar
 3. `/workflow:ruflo` komutunu `~/.claude/commands/workflow/` altına kopyalar
 4. Ruflo MCP sunucusunu Claude Code'a kaydeder
@@ -38,7 +38,7 @@ Setup scripti şunları yapar:
 
 ```bash
 # 1. Ruflo
-claude mcp add claude-flow -- npx -y @claude-flow/cli@latest
+claude mcp add claude-flow -- npx -y @claude-flow/cli@3.5.80latest
 
 # 2. Superpowers (Claude Code içinden)
 /plugin install superpowers@claude-plugins-official
@@ -142,7 +142,7 @@ Her phase'de hangi aracın ne yaptığını aşağıda görebilirsin.
 
 ## Ruflo Komut Referansı
 
-> Kısa alias: `ruflo` (yoksa `npx @claude-flow/cli@latest`)
+> Kısa alias: `ruflo` (yoksa `npx @claude-flow/cli@3.5.80latest`)
 
 ### Proje Başlatma
 
